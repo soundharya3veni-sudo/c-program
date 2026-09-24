@@ -1,0 +1,132 @@
+import java.util.*;
+
+class Solution {
+
+    static class Disc {
+        int r;
+        int h;
+
+        Disc(int r, int h) {
+            this.r = r;
+            this.h = h;
+        }
+    }
+
+    public int maxStackHeight(int[] r, int[] h) {
+
+        int n = r.length;
+
+        Disc[] discs = new Disc[n];
+
+        for (int i = 0; i < n; i++) {
+            discs[i] = new Disc(r[i], h[i]);
+        }
+
+        Arrays.sort(discs, (a, b) -> {
+            if (a.r != b.r) {
+                return Integer.compare(a.r, b.r);
+            }
+            return Integer.compare(a.h, b.h);
+        });
+
+        // Coordinate compression of heights
+        int[] heights = new int[n];
+
+        for (int i = 0; i < n; i++) {
+            heights[i] = discs[i].h;
+        }
+
+        Arrays.sort(heights);
+
+        int m = 0;
+
+        for (int i = 0; i < n; i++) {
+            if (i == 0 || heights[i] != heights[i - 1]) {
+                heights[m++] = heights[i];
+            }
+        }
+
+        long[] bit = new long[m + 1];
+
+        long answer = 0;
+
+        int i = 0;
+
+        while (i < n) {
+
+            int j = i;
+
+            while (j < n && discs[j].r == discs[i].r) {
+                j++;
+            }
+
+            long[] current = new long[j - i];
+            int[] index = new int[j - i];
+
+            for (int k = i; k < j; k++) {
+
+                int pos = lowerBound(heights, m, discs[k].h);
+
+                index[k - i] = pos;
+
+                long best = query(bit, pos);
+
+                current[k - i] = best + discs[k].h;
+            }
+
+            // Update only after processing the complete
+            // same-radius group
+            for (int k = i; k < j; k++) {
+
+                int pos = index[k - i];
+
+                update(bit, m, pos + 1, current[k - i]);
+
+                answer = Math.max(answer, current[k - i]);
+            }
+
+            i = j;
+        }
+
+        return (int) answer;
+    }
+
+    static long query(long[] bit, int pos) {
+
+        long result = 0;
+
+        while (pos > 0) {
+            result = Math.max(result, bit[pos]);
+            pos -= pos & -pos;
+        }
+
+        return result;
+    }
+
+    static void update(long[] bit, int n, int pos, long value) {
+
+        while (pos <= n) {
+            bit[pos] = Math.max(bit[pos], value);
+            pos += pos & -pos;
+        }
+    }
+
+    static int lowerBound(int[] arr, int n, int target) {
+
+        int left = 0;
+        int right = n;
+
+        while (left < right) {
+
+            int mid = left + (right - left) / 2;
+
+            if (arr[mid] < target) {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+
+        return left;
+    }
+}
